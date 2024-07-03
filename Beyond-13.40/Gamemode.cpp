@@ -48,6 +48,10 @@ bool Gamemode::ReadyToStartMatch(AFortGameModeAthena* GameMode)
 
 		GetGameMode()->CurrentPlaylistId = GetGameState()->CurrentPlaylistInfo.BasePlaylist->PlaylistId;
 		GetGameMode()->CurrentPlaylistName = GetGameState()->CurrentPlaylistInfo.BasePlaylist->PlaylistName;
+		GetGameState()->GamePhase = EAthenaGamePhase::SafeZones; // mm idk if work
+		GetGameState()->GamePhaseStep = EAthenaGamePhaseStep::StormHolding; // mm idk if work
+		GetGameState()->OnRep_GamePhase(EAthenaGamePhase::Aircraft); // mm idk if work
+		/*GetGameState()->SafeZonesStartTime = GetStatics()->GetTimeSeconds(UWorld::GetWorld());*/ // most w code ever but idk
 
 		GetGameState()->OnRep_CurrentPlaylistInfo();
 
@@ -159,7 +163,7 @@ APawn* Gamemode::SpawnDefaultPawnForHook(AGameModeBase* GameMode, AController* N
 			auto SetWaterLevel = StaticFindObject<UFunction>("/Game/Athena/Apollo/Environments/Blueprints/Apollo_WaterSetup.Apollo_WaterSetup_C.SetWaterLevel");
 			auto OnRep_CurrentWaterLevel = StaticFindObject<UFunction>("/Game/Athena/Apollo/Environments/Blueprints/Apollo_WaterSetup.Apollo_WaterSetup_C.OnRep_CurrentWaterLevel");
 
-			int WaterLevel = 7;
+			int WaterLevel = 1;
 			WaterSetup->ProcessEvent(SetWaterLevel, &WaterLevel);
 
 			float parms = 0.f;
