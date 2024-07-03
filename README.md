@@ -1,2 +1,2 @@
 # Beyond-13.40
- scrapped gameserver for beyond, most likely wont be updated in the long run.
+ try to help twin to fix zones or smh becouse all on this gs no work only ingame cant ever jump of the bus
