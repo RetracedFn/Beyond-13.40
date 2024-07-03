@@ -15,7 +15,7 @@ void Player::ServerLoadingScreenDroppedHook(AFortPlayerControllerAthena* PC)
 		return ServerLoadingScreenDropped(PC);
 
 	UFortKismetLibrary::UpdatePlayerCustomCharacterPartsVisualization(PlayerState);
-	
+
 	PlayerState->OnRep_CharacterData();
 
 	return ServerLoadingScreenDropped(PC);
@@ -55,11 +55,99 @@ void ServerHandlePickup(AFortPlayerPawn* Pawn, AFortPickup* Pickup, float InFlyT
 			Items++;
 			if (Items > 5)
 			{
-				//Remove(PC, Entry.ItemGuid);
+			//	Remove(PC, Entry.ItemGuid);
 			}
 		}
 	}
+
+	Pickup->PickupLocationData.bPlayPickupSound = bPlayPickupSound;
+	Pickup->PickupLocationData.FlyTime = 0.4f;
+	Pickup->PickupLocationData.ItemOwner = Pawn;
+	Pickup->PickupLocationData.PickupGuid = Pickup->PrimaryPickupItemEntry.ItemGuid;
+	Pickup->PickupLocationData.PickupTarget = Pawn;
+	Pickup->OnRep_PickupLocationData();
+
+	Pickup->bPickedUp = true;
+	Pickup->OnRep_bPickedUp();
+
+	return ServerHandlePickupOG(Pawn, Pickup, InFlyTime, InStartDirection, bPlayPickupSound);
 }
+
+void (*NetMulticast_Athena_BatchedDamageCuesOG)(AFortPawn* Pawn, FAthenaBatchedDamageGameplayCues_Shared SharedData, FAthenaBatchedDamageGameplayCues_NonShared NonSharedData);
+void NetMulticast_Athena_BatchedDamageCues(AFortPawn* Pawn, FAthenaBatchedDamageGameplayCues_Shared SharedData, FAthenaBatchedDamageGameplayCues_NonShared NonSharedData)
+{
+	if (!Pawn || Pawn->Controller->IsA(ABP_PhoebePlayerController_C::StaticClass()))
+		return;
+
+	if (Pawn->CurrentWeapon)
+		//UpdateLoadedAmmo((AFortPlayerController*)Pawn->Controller, ((AFortPlayerPawn*)Pawn)->CurrentWeapon);
+
+	return NetMulticast_Athena_BatchedDamageCuesOG(Pawn, SharedData, NonSharedData);
+}
+
+void ServerReviveFromDBNO(AFortPlayerPawnAthena* Pawn, AFortPlayerControllerAthena* Instigator)
+{
+	//ReviveCounts[Instigator]++;
+	Pawn->bIsDBNO = false;
+	Pawn->OnRep_IsDBNO();
+	auto PC = ((AFortPlayerControllerAthena*)Pawn->Controller);
+	PC->RespawnPlayerAfterDeath(false);
+	Pawn->SetHealth(30);
+	//RemoveAbility(PC, UGAB_AthenaDBNO_C::StaticClass());
+}
+
+void ServerSendZiplineState(AFortPlayerPawnAthena* Pawn, FZiplinePawnState State)
+{
+	if (!Pawn)
+		return;
+
+	Pawn->ZiplineState = State;
+	//OnRep_ZiplineState(Pawn);
+
+	if (State.bJumped)
+	{
+		Pawn->LaunchCharacter(FVector{ 0,0,1200 }, false, false);
+	}
+}
+
+void (*OnCapsuleBeginOverlapOG)(AFortPlayerPawn* Pawn, UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, FHitResult SweepResult);
+void OnCapsuleBeginOverlap(AFortPlayerPawn* Pawn, UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, FHitResult SweepResult)
+{
+	if (OtherActor->IsA(AFortPickup::StaticClass()))
+	{
+		AFortPickup* Pickup = (AFortPickup*)OtherActor;
+
+		if (Pickup->PawnWhoDroppedPickup == Pawn)
+			return OnCapsuleBeginOverlapOG(Pawn, OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+
+		UFortItemDefinition* Def = (UFortItemDefinition*)Pickup->PrimaryPickupItemEntry.ItemDefinition;
+
+		if (Def->IsA(UFortAmmoItemDefinition::StaticClass()) || Def->IsA(UFortResourceItemDefinition::StaticClass()))
+		{
+			Pawn->ServerHandlePickup(Pickup, 0.40f, FVector(), true);
+		}
+	}
+
+	return OnCapsuleBeginOverlapOG(Pawn, OverlappedComp, OtherActor, OtherComp, OtherBodyIndex, bFromSweep, SweepResult);
+}
+
+void ServerHandlePickupWithSwap(AFortPlayerPawnAthena* Pawn, AFortPickup* Pickup, FGuid Swap, float InFlyTime, FVector InStartDirection, bool bPlayPickupSound)
+{
+	if (!Pawn || !Pickup || Pickup->bPickedUp)
+		return;
+
+	AFortPlayerControllerAthena* PC = (AFortPlayerControllerAthena*)Pawn->Controller;
+
+	//FFortItemEntry* Entry = FindEntry(PC, Swap);
+	//if (!Entry || !Entry->ItemDefinition || Entry->ItemDefinition->IsA(UFortWeaponMeleeItemDefinition::StaticClass()))
+		//return;
+
+	//SpawnPickup(Pawn->K2_GetActorLocation(), Entry, EFortPickupSourceTypeFlag::Player, EFortPickupSpawnSource::Unset, Pawn);
+	//Remove(PC, Swap);
+	Pawn->ServerHandlePickup(Pickup, InFlyTime, InStartDirection, bPlayPickupSound);
+}
+
+
 
 void Player::HookAll()
 {
