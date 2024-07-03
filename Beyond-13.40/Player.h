@@ -17,6 +17,7 @@ namespace Player
 	/// <param name="PC"></param>
 	void ServerLoadingScreenDroppedHook(AFortPlayerControllerAthena* PC);
 	void ServerSendZiplineState(AFortPlayerControllerAthena* PC);
+	void ServerHandlePickup(AFortPlayerPawn* PC);
 	/// <summary>
 	/// Hooks every Player related Function
 	/// </summary>
